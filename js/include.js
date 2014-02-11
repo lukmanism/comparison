@@ -1,5 +1,5 @@
-function pie(data, target) {
-	var options = {		
+function pieChart(data,target) {
+	var options = {
 		segmentShowStroke : false,	
 		segmentStrokeColor : "#fff",	
 		segmentStrokeWidth : 20,	
@@ -7,15 +7,38 @@ function pie(data, target) {
 		animationSteps : 60,	
 		animationEasing : "easeOutBounce",	
 		animateRotate : true,
-		animateScale : true,	
+		animateScale : false,	
 		onAnimationComplete : null
 	}
 	new Chart(document.getElementById(target).getContext("2d")).Pie(data, options);	
 	$('#'+target).attr("width","100").attr("height","100"); //forced size
 }
 
+function lineChart(datas){
+	var datasets = [];
+	var strokeColor = "#ababab";
+	var pointColor = "#ECEBEE";
+	var pointStrokeColor = "#ababab";
 
-function linechart(datas){
+	var i = 0;
+	var legend = '';
+
+	$.each(datas['dd'], function(key,val){
+		datasets[key] = {
+			fillColor: window.seriecolor[0][key],
+			strokeColor: strokeColor,
+			pointColor: pointColor,
+			pointStrokeColor: pointStrokeColor,
+			data: val	
+		}
+		legend += '<dl class="column" style="border-bottom: 4px solid '+window.seriecolor[0][key]+';"><dt class="grey50 left">'+datas['x'][key]+'</dt><dd class="ilegend small left">'+val[val.length - 1]+'</dd></dl>';
+		i++;
+	});
+
+	legend = legend.replace(/column/g, 'col'+i);
+	$('.legend').html(legend);
+	$('.stats_title').html(datas['x'].join(' vs. '));
+
 	var options = {	
 		scaleOverlay : false,
 		scaleOverride : false,
@@ -29,13 +52,13 @@ function linechart(datas){
 		scaleFontFamily : "'Helvetica'",			
 		scaleFontSize : 12,			
 		scaleFontStyle : "normal",			
-		scaleFontColor : "#666",				
+		scaleFontColor : "#838285",				
 		scaleShowGridLines : false,			
 		scaleGridLineColor : "rgba(0,0,0,.05)",	
 		scaleGridLineWidth : 1,				
-		bezierCurve : true,			
+		bezierCurve : true,
 		pointDot : true,			
-		pointDotRadius : 3,			
+		pointDotRadius : 2,			
 		pointDotStrokeWidth : 1,			
 		datasetStroke : true,			
 		datasetStrokeWidth : 2,			
@@ -46,89 +69,59 @@ function linechart(datas){
 		onAnimationComplete : null			
 	}
 	var lineChartData = {
-		labels : ["2008","2009","2010","2011","2012","2013"],
-		datasets : [
-			{
-				fillColor : "#1c638d",
-				strokeColor : "#454447",
-				pointColor : "#ffffff",
-				pointStrokeColor : "#454447",
-				data : datas[0][0]['data']
-			},
-			{
-				fillColor : "#4DA3D5",
-				strokeColor : "#454447",
-				pointColor : "#ffffff",
-				pointStrokeColor : "#454447",
-				data : datas[0][1]['data']
-			}
-		]			
+		labels : datas['y'],
+		datasets : datasets			
 	}
 	var myLine = new Chart(document.getElementById("linechart").getContext("2d")).Line(lineChartData,options);
 	window.slideval = lineChartData.datasets;
 }
 
-function loadDiffHome(penduduk,belia,belia_diff,belia_diff_pcnt,belia_diff_bfr,belia_diff_bfr_pcnt,belia_diff_aft,belia_diff_aft_pcnt){
-	$(".belia_total").text(output(belia,0));
-	$(".pop_total").text(output(penduduk,0));
-	$(".belia_pcnt").text(output(belia_diff_pcnt,0)+'%');
-	$(".pop_pcnt").text(output((100 - belia_diff_pcnt),0)+'%');
-
-	$(".belia_diff").text(output(belia_diff,0));
-	$(".belia_diff_pcnt").text(output(belia_diff_pcnt,0)+'%');
-
-	$(".belia_diff_bfr").text(output(belia_diff_bfr,0));
-	$(".belia_diff_bfr_pcnt").text(output(belia_diff_bfr_pcnt,0)+'%');
-
-	$(".belia_diff_aft").text(output(belia_diff_aft,0));
-	$(".belia_diff_aft_pcnt").text(output(belia_diff_aft_pcnt,0)+'%');
-
-	if(belia_diff_bfr < 0){
-		$('.home .belia_diff_bfr_pcnt').removeClass('up').addClass('down');
-	} else {
-		$('.home .belia_diff_bfr_pcnt').removeClass('down').addClass('up');
-	}
-	if(belia_diff_aft < 0){
-		$('.home .belia_diff_aft_pcnt').removeClass('up').addClass('down');
-	} else {
-		$('.home .belia_diff_aft_pcnt').removeClass('down').addClass('up');
-	}	
+function barChart(datas){
+	$("#compare").kendoChart({
+	    axisDefaults: {
+	        majorGridLines: {visible: false}, majorTicks: {visible: false}},
+		legend: {visible: false},
+		seriesDefaults: {
+		    type: "column",
+	        stack: true,
+	        border: {width: 0},
+	        overlay: {gradient: "none"}
+		},
+		series: datas['data'],
+		valueAxis: {
+		    max: 140000,
+		    line: {visible: false},
+		    minorGridLines: {visible: false}
+		},
+		categoryAxis: {
+		    categories: datas['cat'],
+		    majorGridLines: {visible: false}
+		},
+	    tooltip: {
+	        visible: true,
+			template: function(e){
+				var id = barData(e);
+				action(id, loaddata, 'bar');
+	      		return e.series['name'] + ': ' + output(e.value,0); 
+			}
+	    },
+	    valueAxis: {
+	        visible: false
+	    },
+	    legend: { visible: false }
+	});		
 }
 
-
-function calculate(min, yearindex, dataset){
-	var index = yearindex - min;
-
-	var penduduk, penduduk_bfr, penduduk_aft, belia_diff, belia_diff_pcnt, belia_diff_bfr, belia_diff_bfr_pcnt, belia_diff_aft, belia_diff_aft_pcnt;
-
-	penduduk 			= dataset[0]['data'][index];
-	window.belia 		= dataset[1]['data'][index];
-	penduduk_bfr 		= dataset[0]['data'][index-1];
-	window.belia_bfr 	= dataset[1]['data'][index-1];
-	penduduk_aft 		= dataset[0]['data'][index+1];
-	window.belia_aft 	= dataset[1]['data'][index+1];
-
-	// console.log(dataset);
-
-	// $.each(dataset, function(key, val){
-	// 	penduduk		= dataset[0]['data'][index];
-	// 	window.belia	= dataset[1]['data'][index];		
-	// });
-
-	belia_diff = penduduk - belia;
-	belia_diff_pcnt = (belia/penduduk) * 100;
-	belia_diff_bfr = belia_bfr-belia;
-	belia_diff_bfr_pcnt = ((belia_bfr/belia) * 100)-100;
-	belia_diff_aft = belia_aft - belia;
-	belia_diff_aft_pcnt = ((belia_aft/belia) * 100)-100;
-
-	var piedata = [
-		{value: belia_diff, color: "#1c638d"},
-		{value: belia, color:"#4DA3D5"}
-	];
-	pie(piedata, 'pie');
-
-	loadDiffHome(penduduk,belia,belia_diff,belia_diff_pcnt,belia_diff_bfr,belia_diff_bfr_pcnt,belia_diff_aft,belia_diff_aft_pcnt);
+function barData(getData){	
+	var dataItem = getData['dataItem'];
+	var data = getData['series']['data'];
+	var thatid;
+	$.each(data, function(k,v){
+		if(v == dataItem){
+			thatid = getData['series']['ids'][k];
+		}
+	});
+	return thatid;
 }
 
 function output(number, dec)	{
@@ -144,179 +137,331 @@ function output(number, dec)	{
     return x1 + x2;
 }
 
-function bar(stats_set,datas,thisyear){
-	var cat = Array();
-	var Bbelia = Array();
-	var Bpenduduk = Array();
+function setArrow(that, data){
+	data = output(data, 0);
+	$(that).removeClass('down').removeClass('up').removeClass('green');
+	if (data <= -1){			
+		$(that).addClass('down');
+	} else if (data >= 1 && data <= 99.9){			
+		$(that).addClass('up');
+	} else {		
+		$(that).addClass('green');
+	}
+}
 
-	var index = (typeof thisyear != 'undefined')? ((thisyear-window.min_year)): (window.year-window.min_year);
-	var bardata = Array();
+function setTitle(data){
+	$('.main_title').text(data['title']);
+}
 
-	for (var i = 0; i < stats_set; i++) {
-		cat.push((datas[i][2]['district'])? datas[i][2]['district'] : datas[i][3]['state']);
-		Bbelia.push(datas[i][1]['data'][index]);
-		Bpenduduk.push(datas[i][0]['data'][index]);
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////// - New Stuff
+
+function truncate(str, n, useWordBoundary) {
+    var singular, tooLong = str.length > n;
+    useWordBoundary = useWordBoundary || true;
+    // Edge case where someone enters a ridiculously long string.
+    str = tooLong ? str.substr(0, n-1) : str;
+    singular = (str.search(/\s/) === -1) ? true : false;
+    if(!singular) {
+      str = useWordBoundary && tooLong ? str.substr(0, str.lastIndexOf(' ')) : str;
+    }
+    str = str.replace(',','');
+    return  tooLong ? str + '...' : str;
+}
+
+function pieCompare(data){
+	config = {
+		id:['Lpie', 'Rpie'],
+		pcnt:['.Lpcnt', '.Rpcnt'],
+		target:['.home', '.away']
 	};
 
-	$("#compare").kendoChart({
-	    axisDefaults: {
-	        majorGridLines: { visible: false },
-	        majorTicks: { visible: false }
-	    },
-		legend: {
-		    visible: false
-		},
-		seriesDefaults: {
-		    type: "column",
-	        stack: true,
-	        border: {
-	            width: 0
-	        },
-	        overlay: {
-	            gradient: "none"
-	        }
-		},
-		series: [{
-		    name: "Belia",
-		    data: Bbelia,
-	        color: "#4DA3D5"
-		}, {
-	        name: "Penduduk",
-	        data: Bpenduduk,
-	        color: "#1C638D"
-	    }],
-		valueAxis: {
-		    max: 140000,
-		    line: {
-		        visible: false
-		    },
-		    minorGridLines: {
-		        visible: false
-		    }
-		},
-		categoryAxis: {
-		    categories: cat,
-		    majorGridLines: {
-		        visible: false
-		    }
-		},
-	    tooltip: {
-	        visible: true,
-			template: function(e){
-				window.comparex = 0;
-				setSparklines(e.category);
-	      		return e.series['name'] + ': ' + output(e.value,0); 
+	temp = [];
+	pcntContainer = '';
+	$.each(data, function(k,v){
+		var total = data['total'][k].sum();
+			pieChart(v, config['id'][k]);
+			pcntContainer = '';
+			$.each(v, function(k2,v2){
+				diffPcnt = (v2['value']/total) * 100;
+				pcntContainer += '<dl class="column"><dt class="grey50">'+v2['title']+'</dt><dd class="pcnt large" style="color: '+v2['color']+';">'+output(diffPcnt)+'%</dd><dd class="small">'+output(v2['value'])+'</dd></dl>';
+				$(config['target'][k]+'.title').text(v2['cat']);
+				$(config['target'][k]+'.subtitle').text(v2['cat']);
+				temp[k2] = v2['title'];
+			});		
+			$(config['pcnt'][k]).html(pcntContainer);
+		
+	});
+	slider(temp, "vertical", 'vslider'); // Load Slider
+	// console.log($('.Lpcnt').height());		
+}
+
+function pieSummary(data, index){
+	index = (typeof index != 'undefined')? index: 0;
+	var c = pusher.color(window.seriecolor[0][index]);
+	filter = data[index]; // filter by cat
+	config = {
+		id:['Bpie', 'Rpie'],
+		pcnt:['.BLpcnt', '.BRpcnt'],
+		totalc:['.BLtotal', '.BRtotal'],
+		target:['.home_diff ', '.away_diff ']
+	};
+	var total = data['total'][index].sum();
+	temp = [];
+	$.each(filter, function(k,v){
+		color = c.tint(-(k*0.5)).hex6();
+		filter[k]['color'] = color;
+		diffPcnt = (v['value']/total) * 100;
+		pcntContainer = '<dl class="column"><dt class="grey50"><span class="home subtitle">'+v['title']+'</span></dt><dd class="'+config['pcnt'][k]+' large" style="color: '+color+';">'+output(diffPcnt)+'%</dd><dd class="'+config['totalc'][k]+' small">'+output(v['value'])+'</dd></dl>';
+		$(config['target'][k]).html(pcntContainer);
+	});
+	pieChart(filter, config['id'][0]);
+}
+
+function projection(data, index){
+	// console.log(data, index)
+	target = ['.home', '.away'];
+	index = (typeof index != 'undefined')? index: 0; // discharge = 0, death = 1
+	$.each(data, function(k,v){
+		if(typeof v == 'object'){
+			dt = v['dataset'][index];
+			now = dt['now'];
+			bfr = dt['bfr'];
+			aft = dt['aft'];
+			diffBfr = bfr+now;
+			diffBfrPcnt = ((bfr/now) * 100)-100;
+			diffAft = aft - now;
+			diffAftPcnt = ((aft/now) * 100)-100;
+			$.each(v, function(k2,v2){
+// title
+				if(typeof(v2) == 'object'){
+					$.each(v2[index], function(k3,v3){
+						$(target[k]+" ."+k3).text(v3);
+						if(k3 == 'now'){ // 100% marker
+							diff = now;
+							diffPcnt = (now/now) * 100;
+						} else {
+							if(v3 == 0){
+								diffPcnt = 0;
+							} else {
+								diff = now-v3;
+								diffPcnt = ((diff/now) * 100);								
+							}
+						}
+						var push = $(target[k]+" ."+k3+"_pcnt"); // left / right
+						$(push).text(output(diffPcnt, 0)+"%");
+						setArrow(push, diffPcnt);
+					});
+				} 
+			});
+		} else {
+			$(".index_after").text(data['indexAft']);
+			$(".index_current").text(data['index']);
+			$(".index_before").text(data['indexBfr']);
+		}
+		$('.year_timeline span').css("color", window.seriecolor[0][index]);
+	});
+
+}
+
+
+function populate(data, id, type, index){
+	// populate for pie, line, bar, summary
+	indexid = (id.length > 1)? id[0]: id;
+	index = (typeof index != 'undefined')? index : data['d'][indexid]['s'][0][0].length-1;
+
+	switch(type){
+		case 'line':
+			var series = data['d'][id];
+			var datas = {
+				cat: data['t'], catName: data['n'], name: series['a']['n'], title: series['a']['t'], x: data['h'][0], y: data['h'][1], dd: {0: series['s'][0][0], 1: series['s'][0][1]}
 			}
-	    },
-	    valueAxis: {
-	        visible: false
-	    },
-	    legend: { visible: false }
-	});		
-}
-
-
-
-function setSparklines(getData){
-	var pushdata;
-	window.pushdatas = [];
-	pushdata = window.loaddata.filter(function (d) {
-		return d.state == getData;
-	});
-	$.each(pushdata, function(key, val){
-		pushdatas[key]= [{data: val.penduduk}, {data: val.belia}, {district: val.district}, {state: val.state}];
-	});
-	pushSparklines(window.stats_set, window.pushdatas, window.min_year, window.selected_year);
-}
-
-function pushSparklines(stats_set, getdata, min_year, thisyear){
-	var thisdata = (typeof window.pushdatas == 'undefined')? getdata : window.pushdatas;
-
-	var Bbelia = thisdata[window.comparex][1]['data'];
-	var BPenduduk = thisdata[window.comparex][0]['data'];
-	var index = (typeof thisyear != 'undefined')? ((thisyear-window.min_year)): (window.year-window.min_year);
-
-	var piedata = [
-		{value: (BPenduduk[index]-Bbelia[index]), color: "#1c638d"},
-		{value: Bbelia[index], color:"#4DA3D5"}
-	];
-
-	pie(piedata, 'cpie');
-
-	var title = (thisdata[window.comparex][2]['district'])? thisdata[window.comparex][2]['district'] : thisdata[window.comparex][3]['state'];
-	$('.thatdistrict').text(title);
-
-	var belia = Bbelia[index];
-	var belia_bfr = Bbelia[index-1];
-	var belia_aft = Bbelia[index+1];
-
-	var belia_diff_bfr = veriNum(belia_bfr-belia);
-	var belia_diff_aft = veriNum(belia_aft-belia);
-	var belia_diff_bfr_pcnt = veriNum(((belia_bfr/belia) * 100)-100);
-	var belia_diff_aft_pcnt = veriNum(((belia_aft/belia) * 100)-100);
-
-	var belia_diff_pcnt = (Bbelia[index]/BPenduduk[index]) * 100;
-
-	$(".Bbelia_total").text(output(Bbelia[index]));
-	$(".Bpop_total").text(output(BPenduduk[index]));
-	$(".Bbelia_pcnt").text(output(belia_diff_pcnt,0)+'%');
-	$(".Bpop_pcnt").text(output((100 - belia_diff_pcnt),0)+'%');
-
-	$(".Bbelia_diff_bfr").text(output(belia_diff_bfr));
-	$(".Bbelia_diff_aft").text(output(belia_diff_aft));
-	$(".Bbelia_diff_bfr_pcnt").text(output(belia_diff_bfr_pcnt)+'%');
-	$(".Bbelia_diff_aft_pcnt").text(output(belia_diff_aft_pcnt)+'%');
-
-
-	var home_total = window.belia;
-	var away_total = Bbelia[index];
-	var home_pcnt = (home_total/(home_total + away_total)) * 100;
-	var away_pcnt = (away_total/(home_total + away_total)) * 100;
-
-	var Dpiedata = [
-		{value: away_total, color:"#103636"},
-		{value: home_total, color: "#108F97"}
-	];
-
-	pie(Dpiedata, 'Dpie');
-
-	$(".home_diff .Dbelia_diff_total").text(output(home_total));
-	$(".away_diff .Dbelia_diff_total").text(output(away_total));
-	$(".home_diff .Dbelia_diff_pcnt").text(output(home_pcnt)+'%');
-	$(".away_diff .Dbelia_diff_pcnt").text(output(away_pcnt)+'%');
-
-	if(belia_diff_bfr < 0){
-		$('.away .Bbelia_diff_bfr_pcnt').removeClass('up').addClass('down');
-	} else {
-		$('.away .Bbelia_diff_bfr_pcnt').removeClass('down').addClass('up');
+		break;
+		case 'pie':
+			temp= [], temp3= [], cat= [];
+			$.each(id, function(k,v){
+				var series = data['d'][v];
+				temp[k]= [], temp2= [];
+				cat[k] = truncate(series['a']['t'],30,true);
+				$.each(data['h'][0], function(k2,v2){
+					temp2[k2] = series['s'][0][k2][index];
+					temp[k][k2] =  {
+						value: series['s'][0][k2][index], color: window.seriecolor[0][k2], cat: cat[k], title: v2
+					}
+				});
+				temp3[k] = temp2;
+			});
+			temp['total'] = temp3;
+			datas = temp;
+		break;
+		case 'bar':
+			// if(typeof id != 'undefined'){
+			temp= [], cat= [], ids= [], dataset= [];
+			$.each(data['h'][0], function(k2,v2){
+				temp[k2] = [];
+				$.each(id, function(k,v){
+					var series = data['d'][v];
+					temp[k2][k] = series['s'][0][k2][index];
+					cat[k] = truncate(series['a']['t'],30,true);
+					ids[k] = v;
+				});
+				dataset[k2] = {
+					color: window.seriecolor[0][k2], data: temp[k2], name: v2, ids: ids
+				}
+			});
+			datas = {data: dataset, cat: cat};
+			// }
+		break;
+		case 'projection':
+			temp = {
+				index: data['h'][1][index],
+				indexAft: (typeof data['h'][1][index+1] != 'undefined')? data['h'][1][index+1]: 'NA',
+				indexBfr: (typeof data['h'][1][index-1] != 'undefined')? data['h'][1][index-1]: 'NA'
+			}
+			$.each(id, function(k,v){
+				var series = data['d'][v];
+				cat[k] = truncate(series['a']['t'],30,true);
+				var dataset = {title: data['h'][0]}
+				$.each(series['s'][0], function(k2,v2){
+					now = v2[index];
+					aft = (typeof v2[index+1] != 'undefined')? v2[index+1]: 0;
+					bfr = (typeof v2[index-1] != 'undefined')? v2[index-1]: 0;
+					dataset[k2] = {now: now, bfr: bfr, aft: aft}
+				});
+				temp[k] = {cat: cat[k], dataset: dataset}
+			});
+			datas = temp;
+		break;
+		case 'pieSummary':	
+			temp= [], temp3= [], cat= [];
+			$.each(data['h'][0], function(k2,v2){
+				temp[k2] = [], temp2 = [];
+				$.each(id, function(k,v){
+					var series = data['d'][v];
+					cat[k2] = truncate(series['a']['t'],30,true);
+					temp2[k] = series['s'][0][k2][index];
+					temp[k2][k] =  {
+						value: series['s'][0][k2][index], cat: v2, title: cat[k2]
+					}
+				});
+				temp3[k2] = temp2;
+			});
+			temp['total'] = temp3;
+			datas = temp;
+		break;
+		default:
+		break;
 	}
-	if(belia_diff_aft < 0){
-		$('.away .Bbelia_diff_aft_pcnt').removeClass('up').addClass('down');
-	} else {
-		$('.away .Bbelia_diff_aft_pcnt').removeClass('down').addClass('up');
-	}	
+	// calculate here!
+	return datas;
 }
 
-function veriNum(z){
-	return (z != 'Infinity')? z: 0;
+function slider(data, orientation, type){
+	orientation = (orientation)? orientation: "horizontal";
+	var list = '';
+	index = [];
+	$.each(data, function(k,v){
+		list += '<li data-index="'+k+'">'+v+'</li>';
+		index[k] = k;
+	});
+	$('.'+orientation+' .marker').html(list);			
+
+	var slider = $('.'+orientation+" .slider" ).slider({
+		orientation: orientation,
+		value: index.max(), //slider default value
+		min: index.min(),
+		max: index.max(),
+		step: 1,
+		slide: function( event, ui ) {
+
+			if(type == 'onload') {
+				action(window.loadId, loaddata, 'slider', ui.value);
+// console.log(window.vertIndex);
+// 				if(typeof window.vertIndex != 'undefined'){
+// 					$(".vslider .slider").hide();
+// 				}
+			} 
+
+			if(type == 'vslider') {
+				// console.log(window.loadId[1], loaddata)
+// to be edited - window.loadId[1]
+				var pushid = (typeof window.pushId != 'undefined')? window.pushId: window.loadId[1];
+
+			// console.log(pushid)
+				window.vertIndex =  index.max() - ui.value;
+				action(pushid, loaddata, 'vslider', window.vertIndex);
+			} 
+
+		}
+
+	});
 }
 
-function summary(stats_set,datas,val){
-	bar(stats_set,datas,val);
-	pushSparklines(window.stats_set, datas, window.min_year, val);
+function action(id, data, type, index){
+	if(type == 'onload'){
+		var linedata = populate(data, id[0], 'line');
+		setTitle(linedata);
+		lineChart(linedata); // Load Line Chart
+		slider(linedata['y'], "horizontal", type); // Load Slider
 
-	if(typeof val != 'undefined'){
-		$('.widget_tahun').html(val);
-		$('.widget_tahun_prev').html(val-1);
-		$('.widget_tahun_aft').html(val+1);		
+		var bardata = populate(data, id, 'bar');
+		barChart(bardata); // Load Bar Charts
+		
+		var allid = [id[0], id[1]];
+		var piedata = populate(data, allid, 'pie');
+		pieCompare(piedata); // Load Pie Chart
+		
+		var projectdata = populate(data, allid, 'projection');
+		projection(projectdata); //load report projection summary
+
+		var pieSdata = populate(data, allid, 'pieSummary');
+		pieSummary(pieSdata); // Load Pie Chart		
+	}
+	if(type == 'slider'){
+		// Load Bar Chart
+		var bardata = populate(loaddata, id, 'bar', index);
+		barChart(bardata);
+
+		// Load Pie Chart
+		var allid = [id[0], id[1]];
+		var piedata = populate(loaddata, allid, 'pie', index);
+		pieCompare(piedata);
+
+		var projectdata = populate(loaddata, allid, 'projection', index);
+		projection(projectdata); //load report projection summary
+
+		var pieSdata = populate(loaddata, allid, 'pieSummary', index);
+		pieSummary(pieSdata); // Load Pie Chart
+
+		window.hIndex =  index;
+	}
+	if(type == 'vslider'){
+		var allid = [window.loadId[0], id];		
+
+// index vs vindex
+		var projectdata = populate(loaddata, allid, 'projection', window.hIndex);
+		projection(projectdata, index); //load report projection summary
+
+
+		var pieSdata = populate(loaddata, allid, 'pieSummary', window.hIndex);
+		pieSummary(pieSdata, index); // Load Pie Chart
+
+		// console.log(index, window.hIndex);
+	}
+	if(type == 'bar'){
+		var allid = [window.loadId[0], id];
+		var piedata = populate(loaddata, allid, 'pie', window.hIndex);
+		pieCompare(piedata);
+
+// index vs vindex
+		var projectdata = populate(loaddata, allid, 'projection', window.hIndex);
+		projection(projectdata, index); //load report projection summary
+
+		var pieSdata = populate(loaddata, allid, 'pieSummary', index);
+		pieSummary(pieSdata); // Load Pie Chart
+
+		window.pushId = id; //parse to vslider
 	}
 }
-
-function getYearBfr(){
-	$('.getYearBfr').tooltip({ content: "Awesome title!" });
-}
-function getYearAft(){
-	$('.getYearAft').tooltip({ content: "Awesome title!" });
-
-}
-
