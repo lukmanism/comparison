@@ -100,28 +100,21 @@ function barChart(datas){
 	    tooltip: {
 	        visible: true,
 			template: function(e){
-				var id = barData(e);
-				action(id, loaddata, 'bar');
 	      		return e.series['name'] + ': ' + output(e.value,0); 
 			}
 	    },
-	    valueAxis: {
-	        visible: false
-	    },
-	    legend: { visible: false }
+		seriesClick: function (e) {
+			var data = e.series.data;
+			for (var i = 0; i < data.length ; i++) {
+			if (e.dataItem === data[i]) {
+				if(i!=0){
+					action(i, loaddata, 'bar');
+				}
+			}
+		}},
+	    valueAxis: {visible: false},
+	    legend: {visible: false}
 	});		
-}
-
-function barData(getData){	
-	var dataItem = getData['dataItem'];
-	var data = getData['series']['data'];
-	var thatid;
-	$.each(data, function(k,v){
-		if(v == dataItem){
-			thatid = getData['series']['ids'][k];
-		}
-	});
-	return thatid;
 }
 
 function output(number, dec)	{
@@ -149,14 +142,57 @@ function setArrow(that, data){
 	}
 }
 
-function setTitle(data){
-	$('.main_title').text(data['title']);
+function setTitle(data,single){
+	if(single){
+		$('.main_title').text(data['cat']);		
+		$('.sub_title').text(data['title']);
+	} else {
+		$('.main_title').text(data['title']);		
+		$('.sub_title').text(data['title']);
+	}
 }
 
+function filterData(data, id, single){
+	temp = {h: data['h'],  d:[]};
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////// - New Stuff
+	if(single){ // single series
+		temp['n'] = data['d'][id]['a']['n'];
+		temp['t'] = data['d'][id]['a']['t'];
+
+		d = data['d'][id]['s'][1];
+		a = data['h'][2];
+		i = 0;				
+		temp4 = [];
+
+		// swap sub series to main
+		$.each(d[0], function(k,v){ // 0,1,92,97 gender
+			temp4[i] = {
+				a: {
+					n: a[k], t: a[k]
+				},
+				s: {
+					0: []
+				}
+			};
+			temp2 = [];
+			$.each(d, function(k2,v2){ // 0,1 discharge/death
+				temp2[k2] = v2[k];
+			});	
+
+			temp4[i]['s'][0] = temp2;
+			i++;
+		});	
+		temp['d'] = temp4;		
+	} else { // multiple series
+		temp['n'] = data['n'];
+		temp['t'] = data['t'];
+		$.each(id, function(k,v){
+			temp['d'][k] = data['d'][v];
+			i = k;
+		});		
+	}
+	return temp;
+}
 
 function truncate(str, n, useWordBoundary) {
     var singular, tooLong = str.length > n;
@@ -171,7 +207,12 @@ function truncate(str, n, useWordBoundary) {
     return  tooLong ? str + '...' : str;
 }
 
+function toTitleCase(str) {
+    return str.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
+}
+
 function pieCompare(data){
+// console.log(data)
 	config = {
 		id:['Lpie', 'Rpie'],
 		pcnt:['.Lpcnt', '.Rpcnt'],
@@ -180,6 +221,7 @@ function pieCompare(data){
 
 	temp = [];
 	pcntContainer = '';
+
 	$.each(data, function(k,v){
 		var total = data['total'][k].sum();
 			pieChart(v, config['id'][k]);
@@ -221,7 +263,6 @@ function pieSummary(data, index){
 }
 
 function projection(data, index){
-	// console.log(data, index)
 	target = ['.home', '.away'];
 	index = (typeof index != 'undefined')? index: 0; // discharge = 0, death = 1
 	$.each(data, function(k,v){
@@ -234,6 +275,7 @@ function projection(data, index){
 			diffBfrPcnt = ((bfr/now) * 100)-100;
 			diffAft = aft - now;
 			diffAftPcnt = ((aft/now) * 100)-100;
+
 			$.each(v, function(k2,v2){
 // title
 				if(typeof(v2) == 'object'){
@@ -250,6 +292,8 @@ function projection(data, index){
 								diffPcnt = ((diff/now) * 100);								
 							}
 						}
+
+						diffPcnt = (diffPcnt == Number.POSITIVE_INFINITY || diffPcnt == Number.NEGATIVE_INFINITY)? 0: diffPcnt; // infinity assign to zero value
 						var push = $(target[k]+" ."+k3+"_pcnt"); // left / right
 						$(push).text(output(diffPcnt, 0)+"%");
 						setArrow(push, diffPcnt);
@@ -263,100 +307,9 @@ function projection(data, index){
 		}
 		$('.year_timeline span').css("color", window.seriecolor[0][index]);
 	});
-
 }
 
 
-function populate(data, id, type, index){
-	// populate for pie, line, bar, summary
-	indexid = (id.length > 1)? id[0]: id;
-	index = (typeof index != 'undefined')? index : data['d'][indexid]['s'][0][0].length-1;
-
-	switch(type){
-		case 'line':
-			var series = data['d'][id];
-			var datas = {
-				cat: data['t'], catName: data['n'], name: series['a']['n'], title: series['a']['t'], x: data['h'][0], y: data['h'][1], dd: {0: series['s'][0][0], 1: series['s'][0][1]}
-			}
-		break;
-		case 'pie':
-			temp= [], temp3= [], cat= [];
-			$.each(id, function(k,v){
-				var series = data['d'][v];
-				temp[k]= [], temp2= [];
-				cat[k] = truncate(series['a']['t'],30,true);
-				$.each(data['h'][0], function(k2,v2){
-					temp2[k2] = series['s'][0][k2][index];
-					temp[k][k2] =  {
-						value: series['s'][0][k2][index], color: window.seriecolor[0][k2], cat: cat[k], title: v2
-					}
-				});
-				temp3[k] = temp2;
-			});
-			temp['total'] = temp3;
-			datas = temp;
-		break;
-		case 'bar':
-			// if(typeof id != 'undefined'){
-			temp= [], cat= [], ids= [], dataset= [];
-			$.each(data['h'][0], function(k2,v2){
-				temp[k2] = [];
-				$.each(id, function(k,v){
-					var series = data['d'][v];
-					temp[k2][k] = series['s'][0][k2][index];
-					cat[k] = truncate(series['a']['t'],30,true);
-					ids[k] = v;
-				});
-				dataset[k2] = {
-					color: window.seriecolor[0][k2], data: temp[k2], name: v2, ids: ids
-				}
-			});
-			datas = {data: dataset, cat: cat};
-			// }
-		break;
-		case 'projection':
-			temp = {
-				index: data['h'][1][index],
-				indexAft: (typeof data['h'][1][index+1] != 'undefined')? data['h'][1][index+1]: 'NA',
-				indexBfr: (typeof data['h'][1][index-1] != 'undefined')? data['h'][1][index-1]: 'NA'
-			}
-			$.each(id, function(k,v){
-				var series = data['d'][v];
-				cat[k] = truncate(series['a']['t'],30,true);
-				var dataset = {title: data['h'][0]}
-				$.each(series['s'][0], function(k2,v2){
-					now = v2[index];
-					aft = (typeof v2[index+1] != 'undefined')? v2[index+1]: 0;
-					bfr = (typeof v2[index-1] != 'undefined')? v2[index-1]: 0;
-					dataset[k2] = {now: now, bfr: bfr, aft: aft}
-				});
-				temp[k] = {cat: cat[k], dataset: dataset}
-			});
-			datas = temp;
-		break;
-		case 'pieSummary':	
-			temp= [], temp3= [], cat= [];
-			$.each(data['h'][0], function(k2,v2){
-				temp[k2] = [], temp2 = [];
-				$.each(id, function(k,v){
-					var series = data['d'][v];
-					cat[k2] = truncate(series['a']['t'],30,true);
-					temp2[k] = series['s'][0][k2][index];
-					temp[k2][k] =  {
-						value: series['s'][0][k2][index], cat: v2, title: cat[k2]
-					}
-				});
-				temp3[k2] = temp2;
-			});
-			temp['total'] = temp3;
-			datas = temp;
-		break;
-		default:
-		break;
-	}
-	// calculate here!
-	return datas;
-}
 
 function slider(data, orientation, type){
 	orientation = (orientation)? orientation: "horizontal";
@@ -375,93 +328,174 @@ function slider(data, orientation, type){
 		max: index.max(),
 		step: 1,
 		slide: function( event, ui ) {
-
 			if(type == 'onload') {
 				action(window.loadId, loaddata, 'slider', ui.value);
-// console.log(window.vertIndex);
-// 				if(typeof window.vertIndex != 'undefined'){
-// 					$(".vslider .slider").hide();
-// 				}
 			} 
-
 			if(type == 'vslider') {
-				// console.log(window.loadId[1], loaddata)
-// to be edited - window.loadId[1]
-				var pushid = (typeof window.pushId != 'undefined')? window.pushId: window.loadId[1];
-
-			// console.log(pushid)
+				var getpushid = (typeof window.pushId != 'undefined')? window.pushId: 1;
 				window.vertIndex =  index.max() - ui.value;
-				action(pushid, loaddata, 'vslider', window.vertIndex);
-			} 
-
+				action(getpushid, window.dataFilter, 'vslider', window.vertIndex);
+			}
 		}
-
 	});
+}
+
+
+function populate(data, id, type, index){	// populate for pie, line, bar, summary
+	// console.log(data)
+	// console.log(data['d'][0]['s'][0][0].length-1)
+	indexid = (id.length > 1)? id[0]: id;
+	index = (typeof index != 'undefined')? index : data['d'][0]['s'][0][0].length-1;
+
+	switch(type){
+		case 'line':
+			var series = data['d'][0];
+			var datas = {
+				cat: data['t'], catName: data['n'], name: series['a']['n'], title: series['a']['t'], x: data['h'][0], y: data['h'][1], dd: {0: series['s'][0][0], 1: series['s'][0][1]}
+			}
+		break;
+		case 'pie':
+		// console.log(data)
+			temp= [], temp3= [], cat= [];
+			$.each(data['d'], function(k,v){
+				// var series = data['d'][v];
+				temp[k]= [], temp2= [];
+				cat[k] = truncate(v['a']['t'],30,true);
+				$.each(data['h'][0], function(k2,v2){
+					temp2[k2] = v['s'][0][k2][index];
+					temp[k][k2] =  {
+						value: v['s'][0][k2][index], color: window.seriecolor[0][k2], cat: cat[k], title: v2
+					}
+				});
+				temp3[k] = temp2;
+			});
+			temp['total'] = temp3;
+			datas = temp;
+		break;
+		case 'bar':
+			temp= [], cat= [], ids= [], dataset= [];
+			$.each(data['h'][0], function(k2,v2){
+				temp[k2] = [];
+				$.each(data['d'], function(k,v){
+					temp[k2][k] = v['s'][0][k2][index];
+					cat[k] = toTitleCase(truncate(v['a']['t'],30,true));
+					ids[k] = k;
+				});
+				dataset[k2] = {
+					color: window.seriecolor[0][k2], data: temp[k2], name: v2, ids: ids
+				}
+			});
+			datas = {data: dataset, cat: cat};
+		break;
+		case 'projection':
+			temp = {
+				index: data['h'][1][index],
+				indexAft: (typeof data['h'][1][index+1] != 'undefined')? data['h'][1][index+1]: 'NA',
+				indexBfr: (typeof data['h'][1][index-1] != 'undefined')? data['h'][1][index-1]: 'NA'
+			}
+			$.each(data['d'], function(k,v){
+				// var series = data['d'][v];
+				cat[k] = truncate(v['a']['t'],30,true);
+				var dataset = {title: data['h'][0]}
+				$.each(v['s'][0], function(k2,v2){
+					now = v2[index];
+					aft = (typeof v2[index+1] != 'undefined')? v2[index+1]: 0;
+					bfr = (typeof v2[index-1] != 'undefined')? v2[index-1]: 0;
+					dataset[k2] = {now: now, bfr: bfr, aft: aft}
+				});
+				temp[k] = {cat: cat[k], dataset: dataset}
+			});
+			datas = temp;
+		break;
+		case 'pieSummary':	
+			temp= [], temp3= [], cat= [];
+			$.each(data['h'][0], function(k2,v2){
+				temp[k2] = [], temp2 = [];
+				$.each(data['d'], function(k,v){
+					// var series = data['d'][v];
+					cat[k2] = truncate(v['a']['t'],30,true);
+					temp2[k] = v['s'][0][k2][index];
+					temp[k2][k] =  {
+						value: v['s'][0][k2][index], cat: v2, title: cat[k2]
+					}
+				});
+				temp3[k2] = temp2;
+			});
+			temp['total'] = temp3;
+			datas = temp;
+		break;
+		default:
+		break;
+	}
+	// calculate here!
+	return datas;
 }
 
 function action(id, data, type, index){
 	if(type == 'onload'){
-		var linedata = populate(data, id[0], 'line');
-		setTitle(linedata);
+		// data = $.parseJSON(data);
+		getLevel = (id.length <= 1); // single or multiple series
+		window.dataFilter = filterData(data, id, getLevel);
+		var linedata = populate(dataFilter, 0, 'line');
+		setTitle(linedata,getLevel);
 		lineChart(linedata); // Load Line Chart
 		slider(linedata['y'], "horizontal", type); // Load Slider
 
-		var bardata = populate(data, id, 'bar');
+		var bardata = populate(dataFilter, 0, 'bar');
 		barChart(bardata); // Load Bar Charts
-		
-		var allid = [id[0], id[1]];
-		var piedata = populate(data, allid, 'pie');
+
+		var getfilter = filterData(dataFilter, [0,1]);
+		var piedata = populate(getfilter, 0, 'pie');
 		pieCompare(piedata); // Load Pie Chart
 		
-		var projectdata = populate(data, allid, 'projection');
+		var projectdata = populate(getfilter, 0, 'projection');
 		projection(projectdata); //load report projection summary
 
-		var pieSdata = populate(data, allid, 'pieSummary');
+		var pieSdata = populate(getfilter, 0, 'pieSummary');
 		pieSummary(pieSdata); // Load Pie Chart		
 	}
 	if(type == 'slider'){
 		// Load Bar Chart
-		var bardata = populate(loaddata, id, 'bar', index);
+		var bardata = populate(dataFilter, id, 'bar', index);
 		barChart(bardata);
 
 		// Load Pie Chart
-		var allid = [id[0], id[1]];
-		var piedata = populate(loaddata, allid, 'pie', index);
+		var getfilter = filterData(dataFilter, [0,1]);
+		var piedata = populate(getfilter, 0, 'pie', index);
 		pieCompare(piedata);
 
-		var projectdata = populate(loaddata, allid, 'projection', index);
+		var projectdata = populate(getfilter, 0, 'projection', index);
 		projection(projectdata); //load report projection summary
 
-		var pieSdata = populate(loaddata, allid, 'pieSummary', index);
+		var pieSdata = populate(getfilter, 0, 'pieSummary', index);
 		pieSummary(pieSdata); // Load Pie Chart
 
 		window.hIndex =  index;
 	}
 	if(type == 'vslider'){
-		var allid = [window.loadId[0], id];		
+		var getfilter = filterData(data, [0, id]);
 
 // index vs vindex
-		var projectdata = populate(loaddata, allid, 'projection', window.hIndex);
+		var projectdata = populate(getfilter, 0, 'projection', window.hIndex);
 		projection(projectdata, index); //load report projection summary
 
-
-		var pieSdata = populate(loaddata, allid, 'pieSummary', window.hIndex);
+		var pieSdata = populate(getfilter, 0, 'pieSummary', window.hIndex);
 		pieSummary(pieSdata, index); // Load Pie Chart
-
-		// console.log(index, window.hIndex);
 	}
 	if(type == 'bar'){
-		var allid = [window.loadId[0], id];
-		var piedata = populate(loaddata, allid, 'pie', window.hIndex);
+		var getfilter = filterData(dataFilter, [0, id]);
+
+		var piedata = populate(getfilter, 0, 'pie', window.hIndex);
 		pieCompare(piedata);
 
 // index vs vindex
-		var projectdata = populate(loaddata, allid, 'projection', window.hIndex);
+		var projectdata = populate(getfilter, 0, 'projection', window.hIndex);
 		projection(projectdata, index); //load report projection summary
 
-		var pieSdata = populate(loaddata, allid, 'pieSummary', index);
+		var pieSdata = populate(getfilter, 0, 'pieSummary', index);
 		pieSummary(pieSdata); // Load Pie Chart
 
 		window.pushId = id; //parse to vslider
 	}
+	
 }

@@ -1,7 +1,7 @@
 <!doctype html>
 <html>
 	<head>
-		<title>Line Chart</title>
+		<title>Comparison Chart</title>
 		<meta name = "viewport" content = "initial-scale = 1, user-scalable = no">
 		<script src="js/Chart.min.js"></script>
 		<link rel="stylesheet" href="css/jquery-ui.min.css">
@@ -26,7 +26,7 @@
 	<div class="clear"></div>
 
 	<div class="content">
-		<div class="widget_title_s bottom15"><span class="main_title">TITLE</span> graph for <span class="index_current">2013</span></div>
+		<div class="widget_title_s bottom15"><span class="sub_title">TITLE</span> graph for <span class="index_current">2013</span></div>
 		<canvas id="linechart" height="200" width="688"></canvas>
 		<div class="clear"></div>
 
@@ -90,7 +90,7 @@
 					<div class="getYearAft hide hover">getYearAft Test</div>
 			    </dl>
 			    <dl class="row right15 year_now">
-			        <dd class="now_pcnt med" style="color:#2C5E19;">100%</dd>
+			        <dd class="now_pcnt med-large" style="color:#2C5E19;">100%</dd>
 			        <dd class="hline right"></dd>
 			        <dd class="now small">888,888</dd>
 			    </dl>
@@ -115,7 +115,7 @@
 			        <dd class="aft small">888</dd>
 			    </dl>
 			    <dl class="row left15 year_now">
-			        <dd class="now_pcnt med" style="color:#2C5E19;">100%</dd>
+			        <dd class="now_pcnt med-large" style="color:#2C5E19;">100%</dd>
 			        <dd class="hline left"></dd>
 			        <dd class="now small">888,888</dd>
 			    </dl>
@@ -146,17 +146,35 @@
 </div>
 
 <script>
+	// webservice available at http://10.1.20.69/mi-bis/api/
+	// assign your value to loaddata i.e. var loaddata = datafromandroid;
+	// be careful with ' character, as it will break the data string. Make sure to escape the character with \'
 	var loaddata;
 	$.ajax({
 			async: false,
-			url: "http://10.1.20.69/mi-bis/api/",
+			url: "http://10.1.20.69/mi-bis/api/", // fetching webservice
 			beforeSend: function(xhr) {}
 		}).done(function(data) {
 			loaddata = data;
 	});
 
-</script>
-<script src='js/action.js'></script>
+	window.seriecolor = {
+		0: ["#D8D7DA", "#4DA3D5", "#1c638d"],
+		1: ["#D8D7DA", "#bcbcbc", "#979797"],
+		2: ["#4DA3D5", "#2b87bc", "#0c6ba3"],
+	};
 
+	if(loaddata){
+		// You have option to either load a multiple series, or single
+		// Multiple series will load first level data (given the fact that current data has 2 level e.g. Cause and Gender)
+		// Single serie will load second level data instead (Gender)
+
+		// window.loadId = [11]; // Single Serie
+		window.loadId = [11,8,13]; // Multiple Series
+		action(loadId, loaddata, 'onload');		
+	} else {
+		alert('Data not loaded!');
+	}
+</script>
 	</body>
 </html>

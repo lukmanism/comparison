@@ -7,7 +7,8 @@ $(function() {
 
 
 	if(loaddata){
-		window.loadId = [11];
+		// window.loadId = [11,8,13];
+		window.loadId = [11]; // single serie will load sub series(3rd level data)
 		action(loadId, loaddata, 'onload');		
 	} else {
 		alert('Data not loaded!');

@@ -53,7 +53,7 @@ h1.main_title {
 }
 .vertical .slider_inner {
 	position: absolute;
-	top: 120px;
+	top: 50%;
 	right: -1px;
 }
 .vertical .slider {
@@ -62,7 +62,7 @@ h1.main_title {
     border: medium none;
     float: right;
 	width: 1px;
-	height: 89px;
+	height: 100px;
 }
 .horizontal .slider_outer {
 	height: 42px;
@@ -94,11 +94,11 @@ h1.main_title {
 	background-color: #F7941D;
     background-image: none;
     border: medium none;
-    float: right;
+    float: left;
     height: 6px;
-    margin-right: 16px;
+    margin-left: 70px;
     margin-top: 22px;
-    width: 605px;
+    width: 580px;
 }
 .horizontal .ui-slider .ui-slider-handle{
 	width:32px;
@@ -307,7 +307,6 @@ h1.main_title {
 .line_summary dl .widget_title_s {
 	margin-top: -10px;
 	margin-bottom: 6px;
-
 }
 
 .bar_summary h3 {
@@ -363,11 +362,17 @@ h1.main_title {
 	width: 47%;
 	text-align: center;
 }
+.sub_title {
+	text-transform: capitalize;
+}
 .widget_title_s {
 	font-size: 0.6em;
     text-transform: none;
     font-weight: 100;
     text-align: left;
+}
+.widget_title_s .subtitle {
+	text-transform: capitalize;
 }
 .separator {
 	margin-top: 20px;
